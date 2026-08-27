@@ -11,5 +11,58 @@
       "expandAssets": true
     }
   ],
-  "communityApps": []
+  "communityApps": [
+    {
+      "matchName": "ALPAC",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/ALPAC.png"
+    },
+    {
+      "matchName": "Deeplex",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Deeplex.png"
+    },
+    {
+      "matchName": "Kinogo",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Kinogo.png"
+    },
+    {
+      "matchName": "KinoPub",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/KinoPub.png"
+    },
+    {
+      "matchName": "Lampa",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Lampa.png"
+    },
+    {
+      "matchName": "Media_Station_X",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Media_Station_X.png"
+    },
+    {
+      "matchName": "MyTuner",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/MyTuner.png"
+    },
+    {
+      "matchName": "OttPlayer",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/OttPlayer.png"
+    },
+    {
+      "matchName": "PRISMA",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/PRISMA.png"
+    },
+    {
+      "matchName": "TizenTube",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/TizenTube.png"
+    },
+    {
+      "matchName": "Vokino",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Vokino.png"
+    },
+    {
+      "matchName": "Zona",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Zona.png"
+    },
+    {
+      "matchName": "Zonamobi",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Zonamobi.png"
+    }
+  ]
 }
