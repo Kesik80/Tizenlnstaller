@@ -4,7 +4,7 @@
   "providers": [
     {
       "id": "kesik80-tizeninstaller",
-      "url": "https://api.github.com/repos/Kesik80/Tizenlnstaller/releases",
+      "url": "https://api.github.com/repos/Kesik80/Tizenlnstaller/releases/tags/v1.0.0",
       "prefix": "",
       "displayName": "Мои приложения",
       "take": 1,
