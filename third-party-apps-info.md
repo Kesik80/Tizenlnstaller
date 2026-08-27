@@ -22,6 +22,6 @@ Application должен совпадать с именем приложения
 | OttPlayer | IPTV-плеер по плейлистам | 2.007 |
 | PRISMA | Медиацентр | 0.2.7 |
 | Vokino | Онлайн-кинотеатр | 0.0.3s |
-| YouTube | Клиент YouTube для Tizen | |
+| TizenTube | Клиент YouTube для Tizen | |
 | Zona | Медиацентр Zona | |
 | Zonamobi | Мобильная версия Zona | |
