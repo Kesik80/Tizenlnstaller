@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 2,
+  "previewImages": {},
+  "providers": [
+    {
+      "id": "kesik80-tizeninstaller",
+      "url": "https://api.github.com/repos/Kesik80/Tizenlnstaller/releases/tags/v1.0.0",
+      "prefix": "",
+      "displayName": "Мои приложения",
+      "take": 1,
+      "expandAssets": true
+    }
+  ],
+  "communityApps": [
+    {
+      "matchName": "ALPAC",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/ALPAC.png"
+    },
+    {
+      "matchName": "Deeplex",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Deeplex.png"
+    },
+    {
+      "matchName": "kinogo",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/kinogo.png"
+    },
+    {
+      "matchName": "KinoPub",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/KinoPub.png"
+    },
+    {
+      "matchName": "lampa",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/lampa.png"
+    },
+    {
+      "matchName": "Media_Station_X",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Media_Station_X.png"
+    },
+    {
+      "matchName": "MyTuner",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/MyTuner.png"
+    },
+    {
+      "matchName": "OttPlayer",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/OttPlayer.png"
+    },
+    {
+      "matchName": "PRISMA",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/PRISMA.png"
+    },
+    {
+      "matchName": "Vokino",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Vokino.png"
+    },
+    {
+      "matchName": "YouTube",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/YouTube.png"
+    },
+    {
+      "matchName": "zona",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/zona.png"
+    },
+    {
+      "matchName": "zonamobi",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/zonamobi.png"
+    }
+  ]
+}

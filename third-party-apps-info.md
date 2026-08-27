@@ -1,24 +1,27 @@
 # Мои приложения
 
 Этот файл читает WgtInstaller и показывает его на экране «App catalog».
-Парсится только таблица ниже: нужны колонки Application и Description,
-колонка Version необязательна. Таблица заканчивается на первой строке,
+Парсится только таблица ниже: обязательны колонки Application и Description,
+колонка Version необязательна. Таблица кончается на первой строке,
 не начинающейся с `|`.
+
+Application должен совпадать с именем приложения в списке установки —
+по нему подтягивается картинка из `third-party-apps-01.json`.
 
 ## Applications
 
 | Application | Description | Version |
 | --- | --- | --- |
-| ALPAC | | |
-| Deeplex | | |
-| kinogo | | |
-| KinoPub | | |
-| lampa | | 1.4.1 |
-| Media_Station_X | | |
-| MyTuner | | |
-| OttPlayer | | 2.007 |
-| PRISMA | | 0.2.7 |
-| Vokino | | 0.0.3s |
-| YouTube | | |
-| zona | | |
-| zonamobi | | |
+| ALPAC | Плеер для просмотра ТВ-каналов | |
+| Deeplex | Медиацентр с онлайн-каталогом | |
+| kinogo | Онлайн-кинотеатр | |
+| KinoPub | Клиент сервиса KinoPub | |
+| lampa | Медиацентр с торрент-поиском | 1.4.1 |
+| Media_Station_X | Универсальный плеер с настройкой через веб | |
+| MyTuner | Интернет-радио | |
+| OttPlayer | IPTV-плеер по плейлистам | 2.007 |
+| PRISMA | Медиацентр | 0.2.7 |
+| Vokino | Онлайн-кинотеатр | 0.0.3s |
+| YouTube | Клиент YouTube для Tizen | |
+| zona | Медиацентр Zona | |
+| zonamobi | Мобильная версия Zona | |
