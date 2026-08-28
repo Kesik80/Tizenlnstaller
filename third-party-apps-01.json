@@ -1,8 +1,6 @@
 {
   "schemaVersion": 2,
-  "previewImages": {
-    "jellyfin": "https://jellyfin.org/assets/images/10.8-home-4a73a92bf90d1eeffa5081201ca9c7bb.png"
-  },
+  "previewImages": {},
   "providers": [
     {
       "id": "kesik80-tizeninstaller",
@@ -11,198 +9,32 @@
       "displayName": "Мои приложения",
       "take": 1,
       "expandAssets": true
-    },
-    {
-      "id": "jellyfin-tizen-builds",
-      "url": "https://api.github.com/repos/jeppevinkel/jellyfin-tizen-builds/releases",
-      "prefix": "Jellyfin - ",
-      "displayName": "",
-      "take": 5
-    },
-    {
-      "id": "moonfin",
-      "url": "https://api.github.com/repos/Moonfin-Client/Smart-TV/releases",
-      "prefix": "",
-      "displayName": "Moonfin",
-      "take": 1
-    },
-    {
-      "id": "litefin",
-      "url": "https://api.github.com/repos/MoazSalem/litefin/releases",
-      "prefix": "",
-      "displayName": "Litefin",
-      "take": 1
-    },
-    {
-      "id": "jellyfin-avplay",
-      "url": "https://api.github.com/repos/PatrickSt1991/tizen-jellyfin-avplay/releases",
-      "prefix": "",
-      "displayName": "Jellyfin - AVPlay",
-      "take": 1
-    },
-    {
-      "id": "jellyfin-avplay-smarthub",
-      "url": "https://api.github.com/repos/asamahy/tizen-jellyfin-avplay/releases",
-      "prefix": "",
-      "displayName": "Jellyfin - AVPlay - 10.10z SmartHub",
-      "take": 1
-    },
-    {
-      "id": "jellyfin-legacy",
-      "url": "https://api.github.com/repos/jeppevinkel/jellyfin-tizen-builds/releases/tags/2024-10-27-1821",
-      "prefix": "",
-      "displayName": "Jellyfin - Legacy",
-      "take": 1
-    },
-    {
-      "id": "tizen-community",
-      "url": "https://api.github.com/repos/PatrickSt1991/tizen-community-packages/releases",
-      "prefix": "",
-      "displayName": "Tizen Community",
-      "take": 1,
-      "expandAssets": true
     }
   ],
   "communityApps": [
     {
-      "matchName": "Moonlight (ToypoodleGaming)",
-      "previewImage": "https://iili.io/fsvn6mJ.png"
-    },
-    {
-      "matchName": "AVPlay 10.10.z - SmartHub",
-      "previewImage": "https://jellyfin.org/assets/images/10.8-home-4a73a92bf90d1eeffa5081201ca9c7bb.png"
-    },
-    {
-      "matchName": "Moonlight (No Gamemode)",
-      "previewImage": "https://iili.io/fsvn6mJ.png"
-    },
-    {
-      "matchName": "TransportTycoonDeluxe",
-      "previewImage": "https://iili.io/qFBP2vn.png"
-    },
-    {
-      "matchName": "Club Info Board",
-      "previewImage": "https://iili.io/fsviHQV.png"
-    },
-    {
       "matchName": "Media_Station_X",
       "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Media_Station_X.png"
-    },
-    {
-      "matchName": "Moonlight-Tizen",
-      "previewImage": "https://iili.io/fsvn6mJ.png"
-    },
-    {
-      "matchName": "TVapp (Fixed)",
-      "previewImage": "https://iili.io/fsvaHsn.png"
-    },
-    {
-      "matchName": "Flixor-Tizen",
-      "previewImage": "https://iili.io/CfGjV44.webp"
-    },
-    {
-      "matchName": "Jellyfin.wgt",
-      "previewImage": "https://jellyfin.org/assets/images/10.8-home-4a73a92bf90d1eeffa5081201ca9c7bb.png"
-    },
-    {
-      "matchName": "PlayerAVPlay",
-      "previewImage": "https://jellyfin.org/assets/images/10.8-home-4a73a92bf90d1eeffa5081201ca9c7bb.png"
-    },
-    {
-      "matchName": "VLC-Tizen-tv",
-      "previewImage": "https://iili.io/CfGNeqb.png"
-    },
-    {
-      "matchName": "OblongIcon",
-      "previewImage": "https://jellyfin.org/assets/images/10.8-home-4a73a92bf90d1eeffa5081201ca9c7bb.png"
-    },
-    {
-      "matchName": "Fireplace",
-      "previewImage": "https://raw.githubusercontent.com/thonythony/fireplace/refs/heads/master/icon.jpg"
-    },
-    {
-      "matchName": "Moonlight",
-      "previewImage": "https://iili.io/fsvn6mJ.png"
     },
     {
       "matchName": "OttPlayer",
       "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/OttPlayer.png"
     },
     {
-      "matchName": "secondary",
-      "previewImage": "https://jellyfin.org/assets/images/10.8-home-4a73a92bf90d1eeffa5081201ca9c7bb.png"
-    },
-    {
       "matchName": "TizenTube",
       "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/TizenTube.png"
-    },
-    {
-      "matchName": "SmartHub",
-      "previewImage": "https://jellyfin.org/assets/images/10.8-home-4a73a92bf90d1eeffa5081201ca9c7bb.png"
-    },
-    {
-      "matchName": "Zonamobi",
-      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Zonamobi.png"
-    },
-    {
-      "matchName": "10.10.z",
-      "previewImage": "https://jellyfin.org/assets/images/10.8-home-4a73a92bf90d1eeffa5081201ca9c7bb.png"
-    },
-    {
-      "matchName": "10.11.z",
-      "previewImage": "https://jellyfin.org/assets/images/10.8-home-4a73a92bf90d1eeffa5081201ca9c7bb.png"
-    },
-    {
-      "matchName": "Deeplex",
-      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Deeplex.png"
-    },
-    {
-      "matchName": "GrayFix",
-      "previewImage": "https://jellyfin.org/assets/images/10.8-home-4a73a92bf90d1eeffa5081201ca9c7bb.png"
     },
     {
       "matchName": "KinoPub",
       "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/KinoPub.png"
     },
     {
-      "matchName": "Litefin",
-      "previewImage": "https://jellyfin.org/assets/images/10.8-home-4a73a92bf90d1eeffa5081201ca9c7bb.png"
-    },
-    {
-      "matchName": "Moonfin",
-      "previewImage": "https://jellyfin.org/assets/images/10.8-home-4a73a92bf90d1eeffa5081201ca9c7bb.png"
-    },
-    {
       "matchName": "MyTuner",
       "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/MyTuner.png"
     },
     {
-      "matchName": "AVPlay",
-      "previewImage": "https://jellyfin.org/assets/images/10.8-home-4a73a92bf90d1eeffa5081201ca9c7bb.png"
-    },
-    {
-      "matchName": "Kinogo",
-      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Kinogo.png"
-    },
-    {
-      "matchName": "Legacy",
-      "previewImage": "https://jellyfin.org/assets/images/10.8-home-4a73a92bf90d1eeffa5081201ca9c7bb.png"
-    },
-    {
-      "matchName": "master",
-      "previewImage": "https://jellyfin.org/assets/images/10.8-home-4a73a92bf90d1eeffa5081201ca9c7bb.png"
-    },
-    {
       "matchName": "Prisma",
       "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Prisma.png"
-    },
-    {
-      "matchName": "Twitch",
-      "previewImage": "https://iili.io/fsvUNu2.md.gif"
-    },
-    {
-      "matchName": "Vokino",
-      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Vokino.png"
     },
     {
       "matchName": "Alpac",
@@ -211,26 +43,6 @@
     {
       "matchName": "Lampa",
       "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Lampa.png"
-    },
-    {
-      "matchName": "Nuvio",
-      "previewImage": "https://nuvioapp.space/assets/newss/Screenshot%202026-04-05%20at%203.17.41%E2%80%AFPM.png"
-    },
-    {
-      "matchName": "TVApp",
-      "previewImage": "https://iili.io/fsvaHsn.png"
-    },
-    {
-      "matchName": "Doom",
-      "previewImage": "https://iili.io/fyofVqu.png"
-    },
-    {
-      "matchName": "Zona",
-      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Zona.png"
-    },
-    {
-      "matchName": "OSA",
-      "previewImage": "https://jellyfin.org/assets/images/10.8-home-4a73a92bf90d1eeffa5081201ca9c7bb.png"
     }
   ]
 }
