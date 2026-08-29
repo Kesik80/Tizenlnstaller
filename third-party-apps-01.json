@@ -9,6 +9,14 @@
       "displayName": "Мои приложения",
       "take": 1,
       "expandAssets": true
+    },
+    {
+      "id": "sources",
+      "url": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/sources.json",
+      "prefix": "",
+      "displayName": "Источники",
+      "take": 1,
+      "expandAssets": true
     }
   ],
   "communityApps": [
@@ -43,6 +51,10 @@
     {
       "matchName": "Lampa",
       "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Lampa.png"
+    },
+    {
+      "matchName": "icva",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Icva.png"
     }
   ]
 }
