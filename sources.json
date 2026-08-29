@@ -15,11 +15,6 @@
         "size": 0
       },
       {
-        "name": "KinoPub.wgt",
-        "browser_download_url": "https://kpstv.net/widgets/kinopub.wgt",
-        "size": 0
-      },
-      {
         "name": "Lampa.wgt",
         "browser_download_url": "https://github.com/yumata/lampa/releases/download/v1.4.1/lampa_v1.9.1.wgt",
         "size": 0

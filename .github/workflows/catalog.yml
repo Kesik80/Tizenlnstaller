@@ -35,8 +35,9 @@ jobs:
 
           STATIC = {
               "Alpac":     "https://dev.alcopa.cc/clients/tizen",
-              "KinoPub":   "https://kpstv.net/widgets/kinopub.wgt",
               "OttPlayer": "http://widget.ottplayer.tv/tizen/TizenOtt.wgt",
+              # KinoPub убран: домен kpstv.net истёк, вместо файла отдаётся заглушка.
+              # Пока держу KinoPub.wgt в релизе v1.0.0 и обновляю руками.
           }
 
           GITHUB_REPO = "yumata/lampa"
