@@ -50,6 +50,7 @@ input:focus{outline:none;border-color:var(--accent)}
 .tag{font-size:10px;color:var(--dim);border:1px solid var(--line);
      border-radius:999px;padding:2px 7px}
 .ver{color:var(--ok);font-size:12px}
+.ver.alt{color:var(--warn)}
 .meta{color:var(--dim);font-size:11px;margin-top:6px;word-break:break-all;line-height:1.6}
 .meta b{color:var(--ink);font-weight:400}
 .meta .err{color:var(--bad)}
@@ -104,6 +105,9 @@ input:focus{outline:none;border-color:var(--accent)}
     внутри пакета, поэтому для неё файл скачивается целиком.
     Красная точка у ссылки чаще всего значит, что домен протух и вместо файла
     отдаётся страница-заглушка.
+    Зелёная версия — та, что записана в пакете, её видит телевизор.
+    Жёлтая появляется, когда в адресе файла стоит другой номер: авторы не всегда
+    обновляют <code>config.xml</code>, и тогда настоящая версия видна только по ссылке.
   </div>
 </div>
 
@@ -188,7 +192,9 @@ function render(){
       <div class="row">
         <span class="dot ${cls}"></span>
         <span class="name">${esc(a.name)}</span>
-        ${s.version ? `<span class="ver">v${esc(s.version)}</span>` : ""}
+        ${s.version ? `<span class="ver" title="из config.xml">v${esc(s.version)}</span>` : ""}
+        ${s.urlVersion && s.urlVersion !== s.version
+            ? `<span class="ver alt" title="из адреса файла">v${esc(s.urlVersion)} ↗</span>` : ""}
         <span class="tag">${esc(a.src)}</span>
       </div>
       <div class="meta">${meta}</div>
@@ -241,7 +247,10 @@ $("#btnCopy").onclick = async () => {
   const lines = apps.map(a => {
     const s = a.state || {};
     const mark = !s.checked ? "?" : s.ok ? "+" : "!";
-    return `${mark} ${a.name}${s.version ? " v"+s.version : ""} — ${s.verdict || s.err || "не проверено"}\n  ${a.url}`;
+    const v = [s.version && "config " + s.version,
+               s.urlVersion && s.urlVersion !== s.version && "адрес " + s.urlVersion]
+              .filter(Boolean).join(", ");
+    return `${mark} ${a.name}${v ? " ("+v+")" : ""} — ${s.verdict || s.err || "не проверено"}\n  ${a.url}`;
   });
   const text = "WgtInstaller, источники\n\n" + lines.join("\n");
   try{ await navigator.clipboard.writeText(text); toast("Отчёт в буфере"); }
@@ -259,7 +268,9 @@ async function one(withVersion){
     if (d.error) bits.push(`<span class="err">${esc(d.error)}</span>`);
     else{
       bits.push(d.ok ? esc(d.verdict) : `<span class="err">${esc(d.verdict)}</span>`);
-      if (d.version) bits.push(`<span class="ver">версия ${esc(d.version)}</span>`);
+      if (d.version) bits.push(`<span class="ver">config.xml: ${esc(d.version)}</span>`);
+      if (d.urlVersion && d.urlVersion !== d.version)
+        bits.push(`<span class="warnt">в адресе: ${esc(d.urlVersion)}</span>`);
       if (d.appName) bits.push(esc(d.appName));
       if (d.contentType) bits.push(esc(d.contentType));
       if (d.size) bits.push(kb(d.size));

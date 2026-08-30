@@ -58,6 +58,23 @@ function readConfigXml(buf) {
 
 const attr = (xml, re) => (xml.match(re) || [])[1] || null;
 
+// версия из самого адреса: .../v1.0.31/ALPAC.wgt или lampa_v1.9.1.wgt
+function versionFromUrl(u) {
+  let url;
+  try { url = new URL(u); } catch { return null; }
+  const path = decodeURIComponent(url.pathname);
+  const file = path.split("/").pop() || "";
+  const grab = s => {
+    const hits = s.match(/(?:^|[\/_\-])v?(\d+\.\d+(?:\.\d+)*)/gi) || [];
+    return hits.map(h => (h.match(/(\d+(?:\.\d+)+)/) || [])[1]).filter(Boolean).pop() || null;
+  };
+  const fromFile = grab(file);
+  if (fromFile) return fromFile;
+  // у релизов GitHub в пути стоит тег релиза, а не версия приложения
+  if (/(^|\.)github\.com$/i.test(url.hostname) && /\/releases\/download\//i.test(path)) return null;
+  return grab(path);
+}
+
 module.exports = async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
 
@@ -120,6 +137,7 @@ module.exports = async (req, res) => {
       try {
         const xml = readConfigXml(buf);
         out.version  = attr(xml, /<widget[^>]*\sversion\s*=\s*"([^"]*)"/i);
+        out.urlVersion = versionFromUrl(r.url) || versionFromUrl(url);
         out.widgetId = attr(xml, /<widget[^>]*\sid\s*=\s*"([^"]*)"/i);
         out.appName  = attr(xml, /<name[^>]*>([^<]*)<\/name>/i);
         out.verdict  = "пакет читается";
@@ -128,6 +146,7 @@ module.exports = async (req, res) => {
         out.verdict = e.message;
       }
     } else {
+      out.urlVersion = versionFromUrl(r.url) || versionFromUrl(url);
       out.verdict = "адрес отвечает";
     }
 
