@@ -110,7 +110,7 @@ input:focus{outline:none;border-color:var(--accent)}
     <button class="primary" id="btnLoad">Загрузить список</button>
     <button id="btnCheckAll">Проверить все</button>
     <button id="btnVerAll">Достать версии</button>
-    <button id="btnInstall" hidden>Установить приложение</button>
+    <button id="btnSwReset">Сбросить кеш</button>
   </div>
 
   <h2>Приложения</h2>
@@ -133,8 +133,7 @@ input:focus{outline:none;border-color:var(--accent)}
     Красная точка чаще всего значит, что домен протух и вместо файла отдаётся заглушка.
     Раз в сутки то же самое делает воркфлоу <code>catalog</code> и пишет в Telegram,
     когда что-то ломается или чинится обратно.
-    <br><br>
-    <a href="#" id="linkSwReset" style="color:var(--dim)">сбросить кеш приложения</a>
+    Если закрыл предложение установки — оно в меню браузера, пункт «Установить приложение».
   </div>
 </div>
 
@@ -387,7 +386,6 @@ let deferred = null;
 let bannerClosed = false;   // только на текущую вкладку, при следующем заходе покажется снова
 
 function showInstallUi(on){
-  $("#btnInstall").hidden = !on;
   $("#banner").classList.toggle("show", on && !bannerClosed);
 }
 
@@ -406,12 +404,10 @@ async function install(){
   showInstallUi(false);
   if (outcome === "accepted") toast("Устанавливается");
 }
-$("#btnInstall").onclick = install;
 $("#btnBannerInstall").onclick = install;
 $("#btnBannerClose").onclick = () => {
   bannerClosed = true;
   $("#banner").classList.remove("show");
-  toast("Кнопка установки осталась в панели сверху");
 };
 
 window.addEventListener("appinstalled", () => {
@@ -421,8 +417,7 @@ window.addEventListener("appinstalled", () => {
 
 // --- диагностика установки: DevTools на телефоне нет, поэтому смотрим отсюда ---
 
-$("#linkSwReset").onclick = async (e) => {
-  e.preventDefault();
+$("#btnSwReset").onclick = async () => {
   try{
     const rs = await navigator.serviceWorker.getRegistrations();
     await Promise.all(rs.map(r => r.unregister()));
