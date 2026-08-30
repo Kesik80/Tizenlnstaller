@@ -76,6 +76,19 @@ input:focus{outline:none;border-color:var(--accent)}
         padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
 .sticky .wrap{display:flex;gap:6px}
 .sticky button{flex:1}
+.banner{
+  position:fixed;left:10px;right:10px;bottom:66px;z-index:45;
+  background:var(--panel-2);border:1px solid var(--accent-dim);border-radius:10px;
+  padding:12px;display:none;gap:10px;align-items:center;
+  box-shadow:0 8px 28px rgba(0,0,0,.45);
+}
+.banner.show{display:flex}
+.banner img{width:44px;height:44px;border-radius:9px;flex:0 0 44px}
+.banner .txt{flex:1;min-width:0}
+.banner .t{font-size:13px;font-weight:600}
+.banner .d{font-size:11px;color:var(--dim);margin-top:2px}
+.banner .x{border:0;background:transparent;color:var(--dim);font-size:18px;padding:4px 8px}
+@media(max-width:380px){.banner img{display:none}}
 .toast{position:fixed;left:50%;bottom:70px;transform:translateX(-50%);background:var(--panel-2);
        border:1px solid var(--accent-dim);padding:9px 14px;border-radius:6px;font-size:12px;
        opacity:0;pointer-events:none;transition:opacity .18s;z-index:50;max-width:92vw}
@@ -102,6 +115,17 @@ input:focus{outline:none;border-color:var(--accent)}
 
   <h2>Приложения</h2>
   <div id="list"><div class="empty">Нажми «Загрузить список» — он читается из репозитория Kesik80/Tizenlnstaller.</div></div>
+
+  <h2>Установка</h2>
+  <div class="card">
+    <div class="row">
+      <button class="tiny" id="btnDiag">Проверить готовность</button>
+      <button class="tiny" id="btnSwReset">Сбросить кеш</button>
+    </div>
+    <div class="meta" id="diag">Когда браузер готов установить приложение, внизу
+      появляется предложение. Если закрыл — кнопка «Установить приложение» остаётся
+      в панели сверху, либо меню браузера, пункт «Установить приложение».</div>
+  </div>
 
   <h2>Разовая проверка</h2>
   <div class="card">
@@ -131,6 +155,16 @@ input:focus{outline:none;border-color:var(--accent)}
   <button id="btnRefresh">Обновить список</button>
   <button class="primary" id="btnCopy">Скопировать отчёт</button>
 </div></div>
+
+<div class="banner" id="banner">
+  <img src="/icons/icon-192x192.png" alt="">
+  <div class="txt">
+    <div class="t">Установить WgtRadar</div>
+    <div class="d">Откроется на весь экран, без адресной строки</div>
+  </div>
+  <button class="primary tiny" id="btnBannerInstall">Установить</button>
+  <button class="x" id="btnBannerClose" aria-label="Закрыть">✕</button>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -361,24 +395,102 @@ load().then(() => {
 });
 
 // --- установка как приложение ---
+let promptFired = false;
 let deferred = null;
+let bannerClosed = false;   // только на текущую вкладку, при следующем заходе покажется снова
+
+function showInstallUi(on){
+  $("#btnInstall").hidden = !on;
+  $("#banner").classList.toggle("show", on && !bannerClosed);
+}
+
 window.addEventListener("beforeinstallprompt", e => {
   e.preventDefault();
   deferred = e;
-  $("#btnInstall").hidden = false;
+  promptFired = true;
+  showInstallUi(true);
 });
-$("#btnInstall").onclick = async () => {
+
+async function install(){
   if (!deferred) return;
   deferred.prompt();
   const { outcome } = await deferred.userChoice;
   deferred = null;
-  $("#btnInstall").hidden = true;
+  showInstallUi(false);
   if (outcome === "accepted") toast("Устанавливается");
+}
+$("#btnInstall").onclick = install;
+$("#btnBannerInstall").onclick = install;
+$("#btnBannerClose").onclick = () => {
+  bannerClosed = true;
+  $("#banner").classList.remove("show");
+  toast("Кнопка установки осталась в панели сверху");
 };
+
 window.addEventListener("appinstalled", () => {
-  $("#btnInstall").hidden = true;
+  showInstallUi(false);
   toast("Установлено");
 });
+
+// --- диагностика установки: DevTools на телефоне нет, поэтому смотрим отсюда ---
+
+async function diagnose(){
+  const out = [];
+  const line = (ok, text) => out.push(`${ok ? "✓" : "✗"} ${esc(text)}`);
+
+  line(location.protocol === "https:" || location.hostname === "localhost",
+       "протокол " + location.protocol.replace(":", ""));
+
+  try{
+    const r = await fetch("/icons/manifest.json", { cache: "no-store" });
+    const m = await r.json();
+    const has192 = (m.icons || []).some(i => /192/.test(i.sizes || ""));
+    const has512 = (m.icons || []).some(i => /512/.test(i.sizes || ""));
+    line(r.ok && m.name && has192 && has512,
+         `манифест: ${m.name || "без имени"}, иконок ${(m.icons || []).length}` +
+         (has192 && has512 ? "" : " — нужны 192 и 512"));
+  }catch(e){ line(false, "манифест не читается: " + e.message); }
+
+  if ("serviceWorker" in navigator){
+    try{
+      const rs = await navigator.serviceWorker.getRegistrations();
+      const r = rs[0];
+      line(!!r, r ? `service worker: ${r.active ? "активен" : r.installing ? "ставится" : "ждёт"}`
+                  : "service worker не зарегистрирован");
+      line(!!navigator.serviceWorker.controller,
+           navigator.serviceWorker.controller ? "страница под управлением sw"
+                                              : "страница ещё не под управлением sw — перезагрузи");
+    }catch(e){ line(false, "sw: " + e.message); }
+  } else line(false, "браузер не умеет service worker");
+
+  const standalone = matchMedia("(display-mode: standalone)").matches ||
+                     matchMedia("(display-mode: fullscreen)").matches ||
+                     navigator.standalone === true;
+  if (standalone) out.push("✓ запущено как приложение — устанавливать уже нечего");
+  else if (promptFired) out.push("✓ браузер готов установить, жми «Установить приложение»");
+  else out.push("· браузер пока не предложил установку: обычно это значит, что приложение " +
+                "уже стоит, либо предложение появится через несколько секунд после загрузки");
+
+  if (navigator.getInstalledRelatedApps){
+    try{
+      const rel = await navigator.getInstalledRelatedApps();
+      if (rel.length) out.push("✓ уже установлено");
+    }catch(e){}
+  }
+  $("#diag").innerHTML = out.join("<br>");
+}
+$("#btnDiag").onclick = diagnose;
+
+$("#btnSwReset").onclick = async () => {
+  try{
+    const rs = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(rs.map(r => r.unregister()));
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => caches.delete(k)));
+    toast("Кеш сброшен, перезагружаю");
+    setTimeout(() => location.reload(), 800);
+  }catch(e){ toast("Не вышло: " + e.message); }
+};
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
