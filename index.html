@@ -251,10 +251,9 @@ function buildReport(){
   const rows = apps.map(a => {
     const s = a.state || {};
     const mark = !s.checked ? "·" : s.ok ? "✓" : "✗";
-    let ver = "—";
-    if (s.version && s.urlVersion && s.urlVersion !== s.version) ver = s.version + " / " + s.urlVersion;
-    else if (s.version) ver = s.version;
-    else if (s.urlVersion) ver = "— / " + s.urlVersion;
+    // один номер: из адреса он обычно точнее, чем забытый авторами config.xml
+    const num = s.urlVersion || s.version;
+    const ver = num ? "v" + num : "—";
     const problem = s.checked && !s.ok ? (s.err || s.verdict || "не отвечает") : "";
     return { mark, name: a.name, ver, size: s.size ? kb(s.size) : "—",
              src: a.src, problem, url: a.url, checked: !!s.checked };
@@ -286,7 +285,8 @@ function buildReport(){
   }
 
   const links = ["", "Ссылки", ...rows.map(r => "  " + pad(r.name, wn) + "  " + r.url)];
-  const legend = ["", "версия: из config.xml / из адреса файла, если номера расходятся"];
+
+  const legend = [];
 
   return head.concat(body, links, legend).join("\n");
 }
