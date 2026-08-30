@@ -1,0 +1,56 @@
+{
+  "name": "WgtRadar",
+  "short_name": "WgtRadar",
+  "description": "Проверка ссылок на .wgt для WgtInstaller: жива ли ссылка, какая версия, скачать напрямую",
+  "id": "/",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#0b0f14",
+  "background_color": "#0b0f14",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "scope": "/",
+  "lang": "ru",
+  "orientation": "portrait-primary",
+  "shortcuts": [
+    {
+      "name": "Проверить все ссылки",
+      "short_name": "Проверить",
+      "url": "/?run=check",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Проверить и достать версии",
+      "short_name": "Версии",
+      "url": "/?run=version",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

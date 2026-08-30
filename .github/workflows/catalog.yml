@@ -140,9 +140,11 @@ jobs:
               start = cur
               for _ in range(20):
                   M, mi, p = cur
+                  # патчи вперёд, затем несколько минорных веток, затем мажорная.
+                  # номера внутри ветки могут начинаться не с нуля, поэтому берём с запасом
                   nxt = ([(M, mi, p + i) for i in range(1, 11)] +
-                         [(M, mi + 1, i) for i in range(0, 4)] +
-                         [(M + 1, 0, 0)])
+                         [(M, mi + d, i) for d in (1, 2, 3) for i in range(0, 6)] +
+                         [(M + 1, i, j) for i in range(0, 2) for j in range(0, 3)])
                   # некоторые сайты на несуществующий файл отвечают 200 и html-страницей,
                   # поэтому проверяем не код ответа, а что там действительно пакет
                   hit = next((c for c in nxt if looks_like_wgt(tpl.format(*c))[0]), None)
@@ -186,6 +188,31 @@ jobs:
 
           open("warnings.txt", "w", encoding="utf-8").write("\n".join(warnings))
 
+          # состояние прошлого запуска: шлём сообщение только когда что-то изменилось,
+          # иначе одна сломанная ссылка будила бы каждый день
+          STATE = ".catalog-state.json"
+          was = []
+          if os.path.exists(STATE):
+              try:
+                  was = json.load(open(STATE, encoding="utf-8")).get("warnings", [])
+              except Exception:
+                  pass
+          changed = sorted(was) != sorted(warnings)
+          json.dump({"warnings": warnings}, open(STATE, "w", encoding="utf-8"),
+                    ensure_ascii=False, indent=2)
+
+          if changed:
+              if warnings:
+                  head = "\u26a0\ufe0f WgtRadar: источники требуют внимания"
+                  body = "\n".join("\u2022 " + w for w in warnings)
+              else:
+                  head = "\u2705 WgtRadar: всё починилось"
+                  body = "Все источники снова отдают пакеты."
+              open("telegram.txt", "w", encoding="utf-8").write(head + "\n\n" + body)
+              print("состояние изменилось — будет отправлено уведомление")
+          else:
+              print("состояние не изменилось, уведомление не нужно")
+
           summary = os.environ.get("GITHUB_STEP_SUMMARY")
           if summary:
               with open(summary, "a", encoding="utf-8") as f:
@@ -200,15 +227,38 @@ jobs:
 
       - name: Закоммитить, если поменялось
         run: |
-          if [ -n "$(git status --porcelain sources.json)" ]; then
+          if [ -n "$(git status --porcelain sources.json .catalog-state.json)" ]; then
             git config user.name  "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add sources.json
+            git add sources.json .catalog-state.json
             git commit -m "sources: обновлены ссылки"
             git push
           else
             echo "нечего коммитить"
           fi
+
+      - name: Сообщить в Telegram
+        if: hashFiles('telegram.txt') != ''
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT:  ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$TG_TOKEN" ] || [ -z "$TG_CHAT" ]; then
+            echo "секреты TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID не заданы, пропускаю"
+            exit 0
+          fi
+          python3 - <<'PY'
+          import json, os, urllib.request
+          text = open("telegram.txt", encoding="utf-8").read() + "\n\n" + os.environ["RUN_URL"]
+          data = json.dumps({"chat_id": os.environ["TG_CHAT"], "text": text,
+                             "disable_web_page_preview": True}).encode()
+          req = urllib.request.Request(
+              "https://api.telegram.org/bot%s/sendMessage" % os.environ["TG_TOKEN"],
+              data=data, headers={"Content-Type": "application/json"})
+          with urllib.request.urlopen(req, timeout=20) as r:
+              print("telegram:", r.status)
+          PY
 
       - name: Уронить запуск, если были проблемы
         run: |

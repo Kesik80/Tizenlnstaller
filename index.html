@@ -4,7 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<title>WgtInstaller · проверка источников</title>
+<title>WgtRadar · источники WgtInstaller</title>
+<link rel="manifest" href="/icons/manifest.json">
+<link rel="icon" href="/icons/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png">
+<link rel="apple-touch-icon" href="/icons/icon-180x180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WgtRadar">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="description" content="Проверка ссылок на .wgt для WgtInstaller: жива ли ссылка, какая версия, скачать напрямую">
+<meta property="og:title" content="WgtRadar">
+<meta property="og:description" content="Проверка ссылок на .wgt для WgtInstaller">
+<meta property="og:image" content="/og-image.png">
+<meta property="og:type" content="website">
 <style>
 :root{
   --bg:#0b0f14; --panel:#111820; --panel-2:#161f2a; --line:#22303f;
@@ -74,8 +87,8 @@ input:focus{outline:none;border-color:var(--accent)}
 
 <header>
   <div class="wrap">
-    <h1>Wgt<span>Installer</span> · источники</h1>
-    <div class="sub">Живы ли ссылки, что за версия внутри пакета, скачать напрямую</div>
+    <h1>Wgt<span>Radar</span></h1>
+    <div class="sub">Следит за источниками WgtInstaller: живы ли ссылки, какая версия, скачать напрямую</div>
   </div>
 </header>
 
@@ -84,6 +97,7 @@ input:focus{outline:none;border-color:var(--accent)}
     <button class="primary" id="btnLoad">Загрузить список</button>
     <button id="btnCheckAll">Проверить все</button>
     <button id="btnVerAll">Достать версии</button>
+    <button id="btnInstall" hidden>Установить приложение</button>
   </div>
 
   <h2>Приложения</h2>
@@ -105,6 +119,8 @@ input:focus{outline:none;border-color:var(--accent)}
     внутри пакета, поэтому для неё файл скачивается целиком.
     Красная точка у ссылки чаще всего значит, что домен протух и вместо файла
     отдаётся страница-заглушка.
+    Раз в сутки то же самое делает воркфлоу <code>catalog</code> в репозитории
+    и пишет в Telegram, когда что-то ломается или чинится обратно.
     Зелёная версия — та, что записана в пакете, её видит телевизор.
     Жёлтая появляется, когда в адресе файла стоит другой номер: авторы не всегда
     обновляют <code>config.xml</code>, и тогда настоящая версия видна только по ссылке.
@@ -137,16 +153,22 @@ function toast(m){
 
 async function load(){
   apps = [];
-  // прямые ссылки
-  try{
-    const r = await fetch(RAW + "sources.json?t=" + Date.now());
-    if (r.ok){
-      const d = await r.json();
-      for (const a of (d[0] && d[0].assets) || [])
-        apps.push({ name: a.name.replace(/\.wgt$/i,""), url: a.browser_download_url,
-                    src: "sources.json", size: a.size || null });
-    }
-  }catch(e){ toast("sources.json не прочитался"); }
+  // прямые ссылки: страница лежит в том же репозитории, поэтому сначала берём
+  // файл рядом с собой, а если открыта не оттуда — тянем с raw
+  let d = null;
+  for (const u of ["sources.json?t=" + Date.now(), RAW + "sources.json?t=" + Date.now()]){
+    try{
+      const r = await fetch(u);
+      if (r.ok){ d = await r.json(); break; }
+    }catch(e){}
+  }
+  if (d){
+    for (const a of (d[0] && d[0].assets) || [])
+      apps.push({ name: a.name.replace(/\.wgt$/i,""), url: a.browser_download_url,
+                  src: "sources.json", size: a.size || null });
+  } else {
+    toast("sources.json не прочитался");
+  }
 
   // ассеты релиза
   try{
@@ -269,7 +291,7 @@ function buildReport(){
                 now.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 
   const head = [
-    "WgtInstaller · источники",
+    "WgtRadar · источники",
     stamp + " · приложений: " + rows.length +
       (bad ? ", с проблемами: " + bad : ", все ссылки живы") +
       (unchecked ? ", не проверено: " + unchecked : ""),
@@ -331,7 +353,38 @@ async function one(withVersion){
 $("#btnOne").onclick    = () => one(false);
 $("#btnOneVer").onclick = () => one(true);
 
-load();
+load().then(() => {
+  // ярлыки с домашнего экрана: /?run=check и /?run=version
+  const run = new URLSearchParams(location.search).get("run");
+  if (run === "check") all(false);
+  else if (run === "version") all(true);
+});
+
+// --- установка как приложение ---
+let deferred = null;
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  deferred = e;
+  $("#btnInstall").hidden = false;
+});
+$("#btnInstall").onclick = async () => {
+  if (!deferred) return;
+  deferred.prompt();
+  const { outcome } = await deferred.userChoice;
+  deferred = null;
+  $("#btnInstall").hidden = true;
+  if (outcome === "accepted") toast("Устанавливается");
+};
+window.addEventListener("appinstalled", () => {
+  $("#btnInstall").hidden = true;
+  toast("Установлено");
+});
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(e => console.warn("sw:", e));
+  });
+}
 </script>
 <script src="console.js"></script>
 </body>
