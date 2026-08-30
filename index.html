@@ -242,19 +242,67 @@ $("#btnRefresh").onclick = load;
 $("#btnCheckAll").onclick= () => all(false);
 $("#btnVerAll").onclick  = () => all(true);
 
+function buildReport(){
+  const pad = (s, n) => {
+    s = String(s ?? "");
+    // ширину считаем по символам, для моноширинного вывода этого достаточно
+    return s + " ".repeat(Math.max(0, n - [...s].length));
+  };
+  const rows = apps.map(a => {
+    const s = a.state || {};
+    const mark = !s.checked ? "·" : s.ok ? "✓" : "✗";
+    let ver = "—";
+    if (s.version && s.urlVersion && s.urlVersion !== s.version) ver = s.version + " / " + s.urlVersion;
+    else if (s.version) ver = s.version;
+    else if (s.urlVersion) ver = "— / " + s.urlVersion;
+    const problem = s.checked && !s.ok ? (s.err || s.verdict || "не отвечает") : "";
+    return { mark, name: a.name, ver, size: s.size ? kb(s.size) : "—",
+             src: a.src, problem, url: a.url, checked: !!s.checked };
+  });
+
+  const w = k => Math.max(...rows.map(r => [...String(r[k])].length));
+  const wn = Math.max(w("name"), 10), wv = Math.max(w("ver"), 6), ws = Math.max(w("size"), 6);
+
+  const bad = rows.filter(r => r.problem).length;
+  const unchecked = rows.filter(r => !r.checked).length;
+  const now = new Date();
+  const stamp = now.toLocaleDateString("ru-RU") + " " +
+                now.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+
+  const head = [
+    "WgtInstaller · источники",
+    stamp + " · приложений: " + rows.length +
+      (bad ? ", с проблемами: " + bad : ", все ссылки живы") +
+      (unchecked ? ", не проверено: " + unchecked : ""),
+    "",
+    "  " + pad("приложение", wn) + "  " + pad("версия", wv) + "  " + pad("размер", ws) + "  источник",
+    "  " + "─".repeat(wn + wv + ws + 6 + 12),
+  ];
+
+  const body = [];
+  for (const r of rows){
+    body.push(r.mark + " " + pad(r.name, wn) + "  " + pad(r.ver, wv) + "  " + pad(r.size, ws) + "  " + r.src);
+    if (r.problem) body.push("  " + " ".repeat(wn) + "  ← " + r.problem);
+  }
+
+  const links = ["", "Ссылки", ...rows.map(r => "  " + pad(r.name, wn) + "  " + r.url)];
+  const legend = ["", "версия: из config.xml / из адреса файла, если номера расходятся"];
+
+  return head.concat(body, links, legend).join("\n");
+}
+
 $("#btnCopy").onclick = async () => {
   if (!apps.length) return toast("Нечего копировать");
-  const lines = apps.map(a => {
-    const s = a.state || {};
-    const mark = !s.checked ? "?" : s.ok ? "+" : "!";
-    const v = [s.version && "config " + s.version,
-               s.urlVersion && s.urlVersion !== s.version && "адрес " + s.urlVersion]
-              .filter(Boolean).join(", ");
-    return `${mark} ${a.name}${v ? " ("+v+")" : ""} — ${s.verdict || s.err || "не проверено"}\n  ${a.url}`;
-  });
-  const text = "WgtInstaller, источники\n\n" + lines.join("\n");
+  const text = buildReport();
   try{ await navigator.clipboard.writeText(text); toast("Отчёт в буфере"); }
-  catch{ toast("Буфер недоступен"); }
+  catch{
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); toast("Отчёт в буфере"); }
+    catch{ toast("Буфер недоступен"); }
+    ta.remove();
+  }
 };
 
 async function one(withVersion){
