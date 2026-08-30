@@ -1,0 +1,218 @@
+name: catalog
+
+# Собирает sources.json — список приложений из чужих источников.
+# WgtInstaller читает его как обычный ответ GitHub Releases API.
+#
+# Три вида источников:
+#   STATIC — ссылка не меняется, просто переносится в файл
+#   GITHUB — берётся самая свежая сборка из релизов чужого репозитория
+#   PROBE  — в ссылке зашита версия, номера перебираются вверх
+#
+# Если источник пропал или отдаёт мусор, прежняя ссылка остаётся на месте,
+# а запуск падает с красным крестом — GitHub пришлёт письмо.
+
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Собрать sources.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re, urllib.request, urllib.error
+
+          OUT = "sources.json"
+
+          STATIC = {
+              "Alpac":     "https://dev.alcopa.cc/clients/tizen",
+              "OttPlayer": "http://widget.ottplayer.tv/tizen/TizenOtt.wgt",
+              # KinoPub убран: домен kpstv.net истёк, вместо файла отдаётся заглушка.
+              # Пока держу KinoPub.wgt в релизе v1.0.0 и обновляю руками.
+          }
+
+          GITHUB_REPO = "yumata/lampa"
+          GITHUB = {
+              "Lampa": r"^lampa[_-]v?(\d+)\.(\d+)\.(\d+)\.wgt$",
+              "ICVA":  r"^icva[_-]v?(\d+)\.(\d+)\.(\d+)\.wgt$",
+          }
+
+          PROBE = {
+              "Prisma": ("https://luno.ws/img/manual/tizen/apps/PRISMA_v{0}.{1}.{2}.wgt", (0, 2, 8)),
+          }
+
+          UA = {"User-Agent": "Mozilla/5.0 (Kesik80-catalog)"}
+          warnings = []
+
+          def note(msg):
+              warnings.append(msg)
+              print("ВНИМАНИЕ:", msg)
+
+          def probe(url, ranged=True):
+              """(код, тип, первые байты); (None, '', b'') если не ответил совсем"""
+              for method in ("HEAD", "GET"):
+                  h = dict(UA)
+                  if method == "GET" and ranged:
+                      h["Range"] = "bytes=0-2047"
+                  try:
+                      req = urllib.request.Request(url, headers=h, method=method)
+                      with urllib.request.urlopen(req, timeout=25) as r:
+                          ct = (r.headers.get("content-type") or "").lower()
+                          head = r.read(4) if method == "GET" else b""
+                          return r.status, ct, head
+                  except urllib.error.HTTPError as e:
+                      if method == "GET":
+                          return e.code, "", b""
+                  except Exception:
+                      pass
+              return None, "", b""
+
+          def looks_like_wgt(url):
+              code, ct, head = probe(url)
+              if code is None:
+                  return False, "сервер не ответил"
+              if code not in (200, 206):
+                  return False, "код ответа %s" % code
+              if "text/html" in ct:
+                  return False, "отдаётся html-страница вместо файла"
+              if head and head[:2] != b"PK":
+                  return False, "содержимое не похоже на zip"
+              return True, ""
+
+          # прежний файл — запасной вариант для всего, что сегодня не нашлось
+          previous = {}
+          if os.path.exists(OUT):
+              try:
+                  for a in json.load(open(OUT, encoding="utf-8"))[0]["assets"]:
+                      previous[os.path.splitext(a["name"])[0]] = a["browser_download_url"]
+              except Exception as e:
+                  note("прежний %s не разобрался: %s" % (OUT, e))
+
+          found = dict(STATIC)
+
+          # --- релизы чужого репозитория ---
+          try:
+              req = urllib.request.Request(
+                  "https://api.github.com/repos/%s/releases?per_page=30" % GITHUB_REPO,
+                  headers=dict(UA, **{"Accept": "application/vnd.github+json",
+                                      "Authorization": "Bearer " + os.environ["GH_TOKEN"]}))
+              releases = json.load(urllib.request.urlopen(req, timeout=30))
+              best = {}
+              for rel in releases:
+                  if rel.get("draft"):
+                      continue
+                  for a in rel.get("assets", []):
+                      for app, pattern in GITHUB.items():
+                          m = re.match(pattern, a["name"], re.I)
+                          if m:
+                              v = tuple(int(x) for x in m.groups())
+                              if app not in best or v > best[app][0]:
+                                  best[app] = (v, a["browser_download_url"], a["name"])
+              for app in GITHUB:
+                  if app in best:
+                      v, url, fname = best[app]
+                      found[app] = url
+                      print("%s: %s (%s)" % (app, ".".join(map(str, v)), fname))
+                  else:
+                      note("%s: в %s не нашлось файла по маске %s — возможно, поменялась схема имени"
+                           % (app, GITHUB_REPO, GITHUB[app]))
+          except Exception as e:
+              note("релизы %s не читаются: %s" % (GITHUB_REPO, e))
+
+          # --- перебор версий в ссылке ---
+          for app, (tpl, seed) in PROBE.items():
+              cur = seed
+              old = previous.get(app)
+              if old:
+                  m = re.search(r"v?(\d+)\.(\d+)\.(\d+)\.wgt$", old, re.I)
+                  if m:
+                      cur = tuple(int(x) for x in m.groups())
+              start = cur
+              for _ in range(20):
+                  M, mi, p = cur
+                  nxt = ([(M, mi, p + i) for i in range(1, 11)] +
+                         [(M, mi + 1, i) for i in range(0, 4)] +
+                         [(M + 1, 0, 0)])
+                  hit = next((c for c in nxt if probe(tpl.format(*c))[0] in (200, 206)), None)
+                  if hit is None:
+                      break
+                  cur = hit
+              url = tpl.format(*cur)
+              ok, why = looks_like_wgt(url)
+              if ok:
+                  found[app] = url
+                  print("%s: %s%s" % (app, ".".join(map(str, cur)),
+                                      "" if cur != start else " (без изменений)"))
+              else:
+                  note("%s: %s — %s" % (app, why, url))
+
+          # --- чего не нашли, берём из прежнего файла ---
+          for app in list(STATIC) + list(GITHUB) + list(PROBE):
+              if app not in found and app in previous:
+                  found[app] = previous[app]
+                  note("%s: оставляю прежнюю ссылку %s" % (app, previous[app]))
+              elif app not in found:
+                  note("%s: ссылки нет ни сегодня, ни в прежнем файле — приложение выпадет из списка" % app)
+
+          # --- проверяем всё, что попало в файл ---
+          for app, url in sorted(found.items()):
+              ok, why = looks_like_wgt(url)
+              if not ok:
+                  note("%s: %s — %s" % (app, why, url))
+
+          assets = [{"name": app + ".wgt", "browser_download_url": url, "size": 0}
+                    for app, url in sorted(found.items())]
+          doc = [{"name": "Источники", "tag_name": "sources", "draft": False, "assets": assets}]
+          new = json.dumps(doc, ensure_ascii=False, indent=2) + "\n"
+
+          old_text = open(OUT, encoding="utf-8").read() if os.path.exists(OUT) else ""
+          if new == old_text:
+              print("без изменений")
+          else:
+              open(OUT, "w", encoding="utf-8").write(new)
+              print("файл обновлён, %d приложений" % len(assets))
+
+          open("warnings.txt", "w", encoding="utf-8").write("\n".join(warnings))
+
+          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary:
+              with open(summary, "a", encoding="utf-8") as f:
+                  f.write("## Источники\n\n")
+                  for app, url in sorted(found.items()):
+                      f.write("- **%s** — %s\n" % (app, url))
+                  if warnings:
+                      f.write("\n## Проблемы\n\n")
+                      for w in warnings:
+                          f.write("- %s\n" % w)
+          PY
+
+      - name: Закоммитить, если поменялось
+        run: |
+          if [ -n "$(git status --porcelain sources.json)" ]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add sources.json
+            git commit -m "sources: обновлены ссылки"
+            git push
+          else
+            echo "нечего коммитить"
+          fi
+
+      - name: Уронить запуск, если были проблемы
+        run: |
+          if [ -s warnings.txt ]; then
+            echo "::error::источники требуют внимания"
+            cat warnings.txt
+            exit 1
+          fi
+          echo "все источники в порядке"
