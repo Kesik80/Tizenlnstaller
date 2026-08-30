@@ -116,17 +116,6 @@ input:focus{outline:none;border-color:var(--accent)}
   <h2>Приложения</h2>
   <div id="list"><div class="empty">Нажми «Загрузить список» — он читается из репозитория Kesik80/Tizenlnstaller.</div></div>
 
-  <h2>Установка</h2>
-  <div class="card">
-    <div class="row">
-      <button class="tiny" id="btnDiag">Проверить готовность</button>
-      <button class="tiny" id="btnSwReset">Сбросить кеш</button>
-    </div>
-    <div class="meta" id="diag">Когда браузер готов установить приложение, внизу
-      появляется предложение. Если закрыл — кнопка «Установить приложение» остаётся
-      в панели сверху, либо меню браузера, пункт «Установить приложение».</div>
-  </div>
-
   <h2>Разовая проверка</h2>
   <div class="card">
     <input id="oneUrl" placeholder="https://… ссылка на .wgt" spellcheck="false">
@@ -141,13 +130,11 @@ input:focus{outline:none;border-color:var(--accent)}
     Проверка идёт через <code>/api/check</code> — из браузера напрямую нельзя,
     чужие домены не отдают CORS-заголовки. Версия читается из <code>config.xml</code>
     внутри пакета, поэтому для неё файл скачивается целиком.
-    Красная точка у ссылки чаще всего значит, что домен протух и вместо файла
-    отдаётся страница-заглушка.
-    Раз в сутки то же самое делает воркфлоу <code>catalog</code> в репозитории
-    и пишет в Telegram, когда что-то ломается или чинится обратно.
-    Зелёная версия — та, что записана в пакете, её видит телевизор.
-    Жёлтая появляется, когда в адресе файла стоит другой номер: авторы не всегда
-    обновляют <code>config.xml</code>, и тогда настоящая версия видна только по ссылке.
+    Красная точка чаще всего значит, что домен протух и вместо файла отдаётся заглушка.
+    Раз в сутки то же самое делает воркфлоу <code>catalog</code> и пишет в Telegram,
+    когда что-то ломается или чинится обратно.
+    <br><br>
+    <a href="#" id="linkSwReset" style="color:var(--dim)">сбросить кеш приложения</a>
   </div>
 </div>
 
@@ -434,54 +421,8 @@ window.addEventListener("appinstalled", () => {
 
 // --- диагностика установки: DevTools на телефоне нет, поэтому смотрим отсюда ---
 
-async function diagnose(){
-  const out = [];
-  const line = (ok, text) => out.push(`${ok ? "✓" : "✗"} ${esc(text)}`);
-
-  line(location.protocol === "https:" || location.hostname === "localhost",
-       "протокол " + location.protocol.replace(":", ""));
-
-  try{
-    const r = await fetch("/icons/manifest.json", { cache: "no-store" });
-    const m = await r.json();
-    const has192 = (m.icons || []).some(i => /192/.test(i.sizes || ""));
-    const has512 = (m.icons || []).some(i => /512/.test(i.sizes || ""));
-    line(r.ok && m.name && has192 && has512,
-         `манифест: ${m.name || "без имени"}, иконок ${(m.icons || []).length}` +
-         (has192 && has512 ? "" : " — нужны 192 и 512"));
-  }catch(e){ line(false, "манифест не читается: " + e.message); }
-
-  if ("serviceWorker" in navigator){
-    try{
-      const rs = await navigator.serviceWorker.getRegistrations();
-      const r = rs[0];
-      line(!!r, r ? `service worker: ${r.active ? "активен" : r.installing ? "ставится" : "ждёт"}`
-                  : "service worker не зарегистрирован");
-      line(!!navigator.serviceWorker.controller,
-           navigator.serviceWorker.controller ? "страница под управлением sw"
-                                              : "страница ещё не под управлением sw — перезагрузи");
-    }catch(e){ line(false, "sw: " + e.message); }
-  } else line(false, "браузер не умеет service worker");
-
-  const standalone = matchMedia("(display-mode: standalone)").matches ||
-                     matchMedia("(display-mode: fullscreen)").matches ||
-                     navigator.standalone === true;
-  if (standalone) out.push("✓ запущено как приложение — устанавливать уже нечего");
-  else if (promptFired) out.push("✓ браузер готов установить, жми «Установить приложение»");
-  else out.push("· браузер пока не предложил установку: обычно это значит, что приложение " +
-                "уже стоит, либо предложение появится через несколько секунд после загрузки");
-
-  if (navigator.getInstalledRelatedApps){
-    try{
-      const rel = await navigator.getInstalledRelatedApps();
-      if (rel.length) out.push("✓ уже установлено");
-    }catch(e){}
-  }
-  $("#diag").innerHTML = out.join("<br>");
-}
-$("#btnDiag").onclick = diagnose;
-
-$("#btnSwReset").onclick = async () => {
+$("#linkSwReset").onclick = async (e) => {
+  e.preventDefault();
   try{
     const rs = await navigator.serviceWorker.getRegistrations();
     await Promise.all(rs.map(r => r.unregister()));
