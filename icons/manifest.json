@@ -51,6 +51,17 @@
           "sizes": "192x192"
         }
       ]
+    },
+    {
+      "name": "Редактор каталога",
+      "short_name": "Редактор",
+      "url": "/editor.html",
+      "icons": [
+        {
+          "src": "/icons/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }
