@@ -53,16 +53,12 @@
       "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Lampa.png"
     },
     {
-      "matchName": "Zona",
-      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Zonamobi.png"
-    },
-    {
-      "matchName": "Lift",
-      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Lift.png"
-    },
-    {
       "matchName": "icva",
       "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/Icva.png"
+    },
+    {
+      "matchName": "SmartTube",
+      "previewImage": "https://raw.githubusercontent.com/Kesik80/Tizenlnstaller/main/img/SmartTube.png"
     }
   ]
 }

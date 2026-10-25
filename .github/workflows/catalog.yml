@@ -41,11 +41,19 @@ jobs:
               # Пока держу KinoPub.wgt в релизе v1.0.0 и обновляю руками.
           }
 
-          GITHUB_REPO = "yumata/lampa"
+          # репозиторий -> {имя приложения: маска имени файла в релизе}
           GITHUB = {
-              "Lampa": r"^lampa[_-]v?(\d+)\.(\d+)\.(\d+)\.wgt$",
-              "ICVA":  r"^icva[_-]v?(\d+)\.(\d+)\.(\d+)\.wgt$",
+              "yumata/lampa": {
+                  "Lampa": r"^lampa[_-]v?(\d+)\.(\d+)\.(\d+)\.wgt$",
+                  "ICVA":  r"^icva[_-]v?(\d+)\.(\d+)\.(\d+)\.wgt$",
+              },
+              # пакет не подписан и помечен pre-release, поэтому суффикс в имени
+              # допускаем любой: автор может начать выкладывать и подписанный
+              "giilc/TizenSmartTube": {
+                  "SmartTube": r"^SmartTubeTizen[_-]v?(\d+)\.(\d+)\.(\d+)(?:-[a-z]+)?\.wgt$",
+              },
           }
+          GITHUB_APPS = [app for pats in GITHUB.values() for app in pats]
 
           PROBE = {
               "Prisma": ("https://luno.ws/img/manual/tizen/apps/PRISMA_v{0}.{1}.{2}.wgt", (0, 2, 8)),
@@ -100,34 +108,35 @@ jobs:
 
           found = dict(STATIC)
 
-          # --- релизы чужого репозитория ---
-          try:
-              req = urllib.request.Request(
-                  "https://api.github.com/repos/%s/releases?per_page=30" % GITHUB_REPO,
-                  headers=dict(UA, **{"Accept": "application/vnd.github+json",
-                                      "Authorization": "Bearer " + os.environ["GH_TOKEN"]}))
-              releases = json.load(urllib.request.urlopen(req, timeout=30))
-              best = {}
-              for rel in releases:
-                  if rel.get("draft"):
-                      continue
-                  for a in rel.get("assets", []):
-                      for app, pattern in GITHUB.items():
-                          m = re.match(pattern, a["name"], re.I)
-                          if m:
-                              v = tuple(int(x) for x in m.groups())
-                              if app not in best or v > best[app][0]:
-                                  best[app] = (v, a["browser_download_url"], a["name"])
-              for app in GITHUB:
-                  if app in best:
-                      v, url, fname = best[app]
-                      found[app] = url
-                      print("%s: %s (%s)" % (app, ".".join(map(str, v)), fname))
-                  else:
-                      note("%s: в %s не нашлось файла по маске %s — возможно, поменялась схема имени"
-                           % (app, GITHUB_REPO, GITHUB[app]))
-          except Exception as e:
-              note("релизы %s не читаются: %s" % (GITHUB_REPO, e))
+          # --- релизы чужих репозиториев ---
+          for repo, patterns in GITHUB.items():
+              try:
+                  req = urllib.request.Request(
+                      "https://api.github.com/repos/%s/releases?per_page=30" % repo,
+                      headers=dict(UA, **{"Accept": "application/vnd.github+json",
+                                          "Authorization": "Bearer " + os.environ["GH_TOKEN"]}))
+                  releases = json.load(urllib.request.urlopen(req, timeout=30))
+                  best = {}
+                  for rel in releases:
+                      if rel.get("draft"):
+                          continue
+                      for a in rel.get("assets", []):
+                          for app, pattern in patterns.items():
+                              m = re.match(pattern, a["name"], re.I)
+                              if m:
+                                  v = tuple(int(x) for x in m.groups())
+                                  if app not in best or v > best[app][0]:
+                                      best[app] = (v, a["browser_download_url"], a["name"])
+                  for app in patterns:
+                      if app in best:
+                          v, url, fname = best[app]
+                          found[app] = url
+                          print("%s: %s (%s)" % (app, ".".join(map(str, v)), fname))
+                      else:
+                          note("%s: в %s не нашлось файла по маске %s — возможно, поменялась схема имени"
+                               % (app, repo, patterns[app]))
+              except Exception as e:
+                  note("релизы %s не читаются: %s" % (repo, e))
 
           # --- перебор версий в ссылке ---
           for app, (tpl, seed) in PROBE.items():
@@ -161,7 +170,7 @@ jobs:
                   note("%s: %s — %s" % (app, why, url))
 
           # --- чего не нашли, берём из прежнего файла ---
-          for app in list(STATIC) + list(GITHUB) + list(PROBE):
+          for app in list(STATIC) + GITHUB_APPS + list(PROBE):
               if app not in found and app in previous:
                   found[app] = previous[app]
                   note("%s: оставляю прежнюю ссылку %s" % (app, previous[app]))
