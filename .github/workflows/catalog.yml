@@ -214,6 +214,9 @@ jobs:
               if warnings:
                   head = "\u26a0\ufe0f WgtRadar: источники требуют внимания"
                   body = "\n".join("\u2022 " + w for w in warnings)
+                  # запуск роняем только на новой проблеме: о старой уже сообщили,
+                  # а красный крест каждые сутки — это письмо от GitHub каждые сутки
+                  open("warnings-new.txt", "w", encoding="utf-8").write("\n".join(warnings))
               else:
                   head = "\u2705 WgtRadar: всё починилось"
                   body = "Все источники снова отдают пакеты."
@@ -269,11 +272,15 @@ jobs:
               print("telegram:", r.status)
           PY
 
-      - name: Уронить запуск, если были проблемы
+      - name: Уронить запуск, если проблема новая
         run: |
-          if [ -s warnings.txt ]; then
+          if [ -s warnings-new.txt ]; then
             echo "::error::источники требуют внимания"
             cat warnings.txt
             exit 1
+          elif [ -s warnings.txt ]; then
+            echo "::warning::проблемы те же, о них уже сообщено — запуск не роняю"
+            cat warnings.txt
+          else
+            echo "все источники в порядке"
           fi
-          echo "все источники в порядке"
