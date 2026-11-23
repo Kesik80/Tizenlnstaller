@@ -35,7 +35,9 @@ jobs:
           OUT = "sources.json"
 
           STATIC = {
-              "Alpac":     "https://dev.alcopa.cc/clients/tizen",
+              # Alpac убран 23.11.26: dev.alcopa.cc/clients/tizen отдаёт 404.
+              # Нативная сборка (.tpk) лежит в релизе v1.0.0 и обновляет себя
+              # сама с tv.alcopa.cc/tizen-update/ — следить за ссылкой не нужно.
               "OttPlayer": "http://widget.ottplayer.tv/tizen/TizenOtt.wgt",
               # KinoPub убран: домен kpstv.net истёк, вместо файла отдаётся заглушка.
               # Пока держу KinoPub.wgt в релизе v1.0.0 и обновляю руками.

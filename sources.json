@@ -5,11 +5,6 @@
     "draft": false,
     "assets": [
       {
-        "name": "Alpac.wgt",
-        "browser_download_url": "https://dev.alcopa.cc/clients/tizen",
-        "size": 0
-      },
-      {
         "name": "ICVA.wgt",
         "browser_download_url": "https://github.com/yumata/lampa/releases/download/v1.4.1/icva_v1.1.2.wgt",
         "size": 0
