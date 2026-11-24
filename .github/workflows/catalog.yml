@@ -30,12 +30,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           python3 - <<'PY'
-          import json, os, re, urllib.request, urllib.error
+          import json, os, re, urllib.request, urllib.error, urllib.parse
 
           OUT = "sources.json"
 
           STATIC = {
-              # Alpac убран 23.11.26: dev.alcopa.cc/clients/tizen отдаёт 404.
+              # Alpac убран 23.11.26: на dev.alcopa.cc/clients раздел Samsung Tizen
+              # помечен «Скоро», файла нет, прежний адрес /clients/tizen отдаёт 404.
+              # За страницей следит блок «наблюдение» ниже: как появится .wgt,
+              # придёт сообщение в Telegram и строку можно будет вернуть сюда.
               # Нативная сборка (.tpk) лежит в релизе v1.0.0 и обновляет себя
               # сама с tv.alcopa.cc/tizen-update/ — следить за ссылкой не нужно.
               "OttPlayer": "http://widget.ottplayer.tv/tizen/TizenOtt.wgt",
@@ -98,6 +101,41 @@ jobs:
               if head and head[:2] != b"PK":
                   return False, "содержимое не похоже на zip"
               return True, ""
+
+          # --- наблюдение: не вернули ли на сайт ALPAC сборку для Tizen ---
+          # Это не источник каталога, а слежка. Ничего не ломается, если страница
+          # недоступна, и в warnings такое не попадает: пропавшая ссылка уже учтена,
+          # а появившаяся — хорошая новость, ронять из-за неё запуск незачем.
+          WATCH_PAGE = "https://dev.alcopa.cc/clients"
+          WATCH_OLD = "https://dev.alcopa.cc/clients/tizen"
+
+          def watch_alpac():
+              """Ссылка на .wgt; '' если её нет; None если страница не открылась."""
+              # 1. прежний адрес снова отдаёт пакет
+              if looks_like_wgt(WATCH_OLD)[0]:
+                  return WATCH_OLD
+              # 2. на странице появилась прямая ссылка на .wgt
+              try:
+                  req = urllib.request.Request(WATCH_PAGE, headers=UA)
+                  with urllib.request.urlopen(req, timeout=25) as r:
+                      html = r.read(500000).decode("utf-8", "replace")
+              except Exception as e:
+                  # сайт мог лечь на минуту — это не повод объявлять ссылку пропавшей
+                  print("наблюдение: %s не прочиталась — %s" % (WATCH_PAGE, e))
+                  return None
+              seen = []
+              for href in re.findall(r'''href\s*=\s*["']([^"']+\.wgt[^"']*)["']''', html, re.I):
+                  url = urllib.parse.urljoin(WATCH_PAGE, href)
+                  if url in seen:
+                      continue
+                  seen.append(url)
+                  if looks_like_wgt(url)[0]:
+                      return url
+              if seen:
+                  print("наблюдение: ссылки на .wgt есть, но файл не отдаётся: %s" % ", ".join(seen))
+              else:
+                  print("наблюдение: на странице по-прежнему нет ссылки на .wgt")
+              return ""
 
           # прежний файл — запасной вариант для всего, что сегодня не нашлось
           previous = {}
@@ -202,16 +240,24 @@ jobs:
           # состояние прошлого запуска: шлём сообщение только когда что-то изменилось,
           # иначе одна сломанная ссылка будила бы каждый день
           STATE = ".catalog-state.json"
-          was = []
+          was, was_alpac = [], ""
           if os.path.exists(STATE):
               try:
-                  was = json.load(open(STATE, encoding="utf-8")).get("warnings", [])
+                  st = json.load(open(STATE, encoding="utf-8"))
+                  was = st.get("warnings", [])
+                  was_alpac = st.get("alpac", "")
               except Exception:
                   pass
-          changed = sorted(was) != sorted(warnings)
-          json.dump({"warnings": warnings}, open(STATE, "w", encoding="utf-8"),
-                    ensure_ascii=False, indent=2)
 
+          alpac = watch_alpac()
+          if alpac is None:
+              alpac = was_alpac
+              print("наблюдение: состояние неизвестно, оставляю прежнее")
+          changed = sorted(was) != sorted(warnings)
+          json.dump({"warnings": warnings, "alpac": alpac},
+                    open(STATE, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+
+          msgs = []
           if changed:
               if warnings:
                   head = "\u26a0\ufe0f WgtRadar: источники требуют внимания"
@@ -222,10 +268,28 @@ jobs:
               else:
                   head = "\u2705 WgtRadar: всё починилось"
                   body = "Все источники снова отдают пакеты."
-              open("telegram.txt", "w", encoding="utf-8").write(head + "\n\n" + body)
+              msgs.append(head + "\n\n" + body)
               print("состояние изменилось — будет отправлено уведомление")
           else:
               print("состояние не изменилось, уведомление не нужно")
+
+          # появление/исчезновение ссылки ALPAC — отдельная новость,
+          # на warnings и на цвет запуска она не влияет
+          if alpac != was_alpac:
+              if alpac and not was_alpac:
+                  msgs.append("ALPAC: на сайте появилась сборка для Tizen\n\n" + alpac +
+                              "\n\nМожно вернуть строку в STATIC воркфлоу catalog.")
+              elif alpac:
+                  msgs.append("ALPAC: ссылка на .wgt изменилась\n\nбыло:  %s\nстало: %s"
+                              % (was_alpac, alpac))
+              else:
+                  msgs.append("ALPAC: ссылка на .wgt снова пропала\n\nбыла: %s\nстраница: %s"
+                              % (was_alpac, WATCH_PAGE))
+              print("наблюдение: состояние ALPAC изменилось — будет отправлено уведомление")
+
+          if msgs:
+              open("telegram.txt", "w", encoding="utf-8").write(
+                  "\n\n———\n\n".join(msgs))
 
           summary = os.environ.get("GITHUB_STEP_SUMMARY")
           if summary:
@@ -233,6 +297,9 @@ jobs:
                   f.write("## Источники\n\n")
                   for app, url in sorted(found.items()):
                       f.write("- **%s** — %s\n" % (app, url))
+                  f.write("\n## Наблюдение\n\n")
+                  f.write("- **ALPAC для Tizen** — %s\n"
+                          % (alpac if alpac else "пока нет, на сайте «Скоро»"))
                   if warnings:
                       f.write("\n## Проблемы\n\n")
                       for w in warnings:
