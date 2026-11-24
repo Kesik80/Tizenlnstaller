@@ -2,7 +2,11 @@
 // Браузер сам это сделать не может — чужие домены не отдают CORS-заголовки.
 //
 // GET /api/check?url=<адрес>[&version=1]
-//   version=1 — скачать пакет и вытащить <widget version> из config.xml
+//   version=1 — скачать пакет и вытащить версию из манифеста
+//
+// Понимает оба формата Tizen: .wgt (веб, config.xml) и .tpk (нативный,
+// tizen-manifest.xml). Тип определяется по содержимому, а не по расширению —
+// файл с чужим именем всё равно будет разобран правильно.
 
 const zlib = require("zlib");
 
@@ -21,8 +25,11 @@ function bad(url) {
   return null;
 }
 
-// --- минимальный читатель zip: ищем config.xml в центральном каталоге ---
-function readConfigXml(buf) {
+// --- минимальный читатель zip: ищем манифест в центральном каталоге ---
+// config.xml -> wgt, tizen-manifest.xml -> tpk; оба лежат в корне архива
+const MANIFESTS = { "config.xml": "wgt", "tizen-manifest.xml": "tpk" };
+
+function readManifest(buf) {
   // End of Central Directory: сигнатура 0x06054b50, ищем с конца
   let eocd = -1;
   for (let i = buf.length - 22; i >= Math.max(0, buf.length - 66000); i--) {
@@ -43,17 +50,19 @@ function readConfigXml(buf) {
     const local   = buf.readUInt32LE(p + 42);
     const name    = buf.slice(p + 46, p + 46 + nameLen).toString("utf8");
 
-    if (name.toLowerCase() === "config.xml") {
+    const kind = MANIFESTS[name.toLowerCase()];
+    if (kind) {
       const lnLen = buf.readUInt16LE(local + 26);
       const leLen = buf.readUInt16LE(local + 28);
       const start = local + 30 + lnLen + leLen;
       const raw   = buf.slice(start, start + compSz);
-      return method === 0 ? raw.toString("utf8")
-                          : zlib.inflateRawSync(raw).toString("utf8");
+      const xml   = method === 0 ? raw.toString("utf8")
+                                 : zlib.inflateRawSync(raw).toString("utf8");
+      return { kind, xml };
     }
     p += 46 + nameLen + extraLen + cmtLen;
   }
-  throw new Error("config.xml не найден — вряд ли это wgt");
+  throw new Error("ни config.xml, ни tizen-manifest.xml не найдены — это не wgt и не tpk");
 }
 
 const attr = (xml, re) => (xml.match(re) || [])[1] || null;
@@ -135,12 +144,21 @@ module.exports = async (req, res) => {
       if (buf.length > MAX_BYTES) throw new Error("файл слишком большой");
       out.size = buf.length;
       try {
-        const xml = readConfigXml(buf);
-        out.version  = attr(xml, /<widget[^>]*\sversion\s*=\s*"([^"]*)"/i);
+        const { kind, xml } = readManifest(buf);
+        out.kind = kind;
+        if (kind === "tpk") {
+          // <manifest package="ALPACNAT01" version="0.1.19" api-version="4.0">
+          out.version  = attr(xml, /<manifest[^>]*\sversion\s*=\s*"([^"]*)"/i);
+          out.widgetId = attr(xml, /<manifest[^>]*\spackage\s*=\s*"([^"]*)"/i);
+          out.appName  = attr(xml, /<label[^>]*>([^<]*)<\/label>/i);
+          out.verdict  = "пакет читается, нативный";
+        } else {
+          out.version  = attr(xml, /<widget[^>]*\sversion\s*=\s*"([^"]*)"/i);
+          out.widgetId = attr(xml, /<widget[^>]*\sid\s*=\s*"([^"]*)"/i);
+          out.appName  = attr(xml, /<name[^>]*>([^<]*)<\/name>/i);
+          out.verdict  = "пакет читается";
+        }
         out.urlVersion = versionFromUrl(r.url) || versionFromUrl(url);
-        out.widgetId = attr(xml, /<widget[^>]*\sid\s*=\s*"([^"]*)"/i);
-        out.appName  = attr(xml, /<name[^>]*>([^<]*)<\/name>/i);
-        out.verdict  = "пакет читается";
       } catch (e) {
         out.ok = false;
         out.verdict = e.message;
