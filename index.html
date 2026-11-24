@@ -121,6 +121,9 @@ input:focus{outline:none;border-color:var(--accent)}
   <h2>Приложения</h2>
   <div id="list"><div class="empty">Нажми «Загрузить список» — он читается из репозитория Kesik80/Tizenlnstaller.</div></div>
 
+  <h2>Наблюдение</h2>
+  <div id="watch"><div class="empty">Читается из состояния ночного воркфлоу.</div></div>
+
   <h2>Разовая проверка</h2>
   <div class="card">
     <input id="oneUrl" placeholder="https://… ссылка на .wgt" spellcheck="false">
@@ -218,6 +221,78 @@ async function load(){
   toast(apps.length ? `Загружено: ${apps.length}` : "Ничего не нашлось");
 }
 
+// --- наблюдение: что видел ночной воркфлоу ---
+// Страницу ALPAC проверяет он, а не браузер: отсюда её не достать,
+// CORS не пустит. Поэтому читаем результат из .catalog-state.json.
+const WATCH_PAGE = "https://dev.alcopa.cc/clients";
+
+async function loadWatch(){
+  const box = $("#watch");
+  let st;
+  try{
+    const r = await fetch(RAW + ".catalog-state.json?cb=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error("код " + r.status);
+    st = await r.json();
+  }catch(e){
+    box.innerHTML = `<div class="card"><div class="meta">
+      <span class="err">Не удалось прочитать состояние воркфлоу: ${esc(e.message)}</span></div></div>`;
+    return;
+  }
+
+  const has = Object.prototype.hasOwnProperty.call(st, "alpac");
+  const url = st.alpac || "";
+  const warns = Array.isArray(st.warnings) ? st.warnings : [];
+
+  let dot, title, meta, btns = "";
+  if (!has){
+    dot = ""; title = "ALPAC для Tizen";
+    meta = `Воркфлоу ещё не запускался после обновления — состояние появится
+            после ближайшей ночной проверки. Можно запустить вручную: Actions → catalog → Run workflow.`;
+  }else if (url){
+    dot = "ok"; title = "ALPAC для Tizen — ссылка появилась";
+    meta = `<b>${esc(url)}</b><br>Можно вернуть строку в STATIC воркфлоу catalog.`;
+    btns = `<div class="row" style="margin-top:8px">
+      <button class="tiny" id="watchDl">Скачать</button>
+      <button class="tiny" id="watchCheck">Проверить</button></div>`;
+  }else{
+    // не красный: отсутствие ALPAC — ожидаемое состояние, а не поломка.
+    // В воркфлоу оно тоже не попадает в warnings и не роняет запуск
+    dot = ""; title = "ALPAC для Tizen — ссылки пока нет";
+    meta = `На <b>${esc(WATCH_PAGE)}</b> раздел Samsung Tizen помечен «Скоро».
+            Воркфлоу смотрит страницу каждую ночь и напишет в Telegram, как только появится .wgt.`;
+  }
+
+  box.innerHTML = `<div class="card">
+    <div class="row">
+      <span class="dot ${dot}"></span>
+      <span class="name">${esc(title)}</span>
+      <span class="tag">наблюдение</span>
+    </div>
+    <div class="meta">${meta}</div>
+    ${btns}
+  </div>
+  <div class="card">
+    <div class="row">
+      <span class="dot ${warns.length ? "bad" : "ok"}"></span>
+      <span class="name">Источники каталога</span>
+      <span class="tag">ночная проверка</span>
+    </div>
+    <div class="meta">${warns.length
+      ? warns.map(w => `<span class="err">${esc(w)}</span>`).join("<br>")
+      : "Прошлой ночью проблем не было."}</div>
+  </div>`;
+
+  if (url){
+    $("#watchDl").onclick = () => window.open(url, "_blank", "noopener");
+    // отправляем ссылку в «Разовую проверку» — отдельного состояния ей не нужно
+    $("#watchCheck").onclick = () => {
+      $("#oneUrl").value = url;
+      $("#oneUrl").scrollIntoView({ behavior: "smooth", block: "center" });
+      one(true);
+    };
+  }
+}
+
 function render(){
   const box = $("#list");
   if (!apps.length){ box.innerHTML = '<div class="empty">Список пуст.</div>'; return; }
@@ -250,7 +325,7 @@ function render(){
         <span class="name">${esc(a.name)}</span>
         <span class="pkg${kind === "tpk" ? " tpk" : ""}"
               title="${kind === "tpk" ? "нативный пакет Tizen" : "веб-виджет Tizen"}">${esc(kind)}</span>
-        ${s.version ? `<span class="ver" title="из config.xml">v${esc(s.version)}</span>` : ""}
+        ${s.version ? `<span class="ver" title="${kind === "tpk" ? "из tizen-manifest.xml" : "из config.xml"}">v${esc(s.version)}</span>` : ""}
         ${s.urlVersion && s.urlVersion !== s.version
             ? `<span class="ver alt" title="из адреса файла">v${esc(s.urlVersion)} ↗</span>` : ""}
         <span class="tag">${esc(a.src)}</span>
@@ -295,8 +370,9 @@ async function all(withVersion){
   toast(bad ? `Проблемных: ${bad}` : "Все ссылки отвечают");
 }
 
-$("#btnLoad").onclick    = load;
-$("#btnRefresh").onclick = load;
+const loadAll = () => { load(); loadWatch(); };
+$("#btnLoad").onclick    = loadAll;
+$("#btnRefresh").onclick = loadAll;
 $("#btnCheckAll").onclick= () => all(false);
 $("#btnVerAll").onclick  = () => all(true);
 
@@ -449,6 +525,9 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("/sw.js").catch(e => console.warn("sw:", e));
   });
 }
+
+// наблюдение показываем сразу: это один маленький json, список ждать не нужно
+loadWatch();
 </script>
 <script src="console.js"></script>
 </body>
