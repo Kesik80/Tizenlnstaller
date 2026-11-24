@@ -261,13 +261,17 @@ jobs:
           if changed:
               if warnings:
                   head = "\u26a0\ufe0f WgtRadar: источники требуют внимания"
-                  body = "\n".join("\u2022 " + w for w in warnings)
+                  body = ("\n".join("\u2022 " + w for w in warnings) +
+                          "\n\n\u0412 \u043a\u0430\u0442\u0430\u043b\u043e\u0433\u0435 \u0441\u0435\u0439\u0447\u0430\u0441: " + ", ".join(sorted(found)) + ".")
                   # запуск роняем только на новой проблеме: о старой уже сообщили,
                   # а красный крест каждые сутки — это письмо от GitHub каждые сутки
                   open("warnings-new.txt", "w", encoding="utf-8").write("\n".join(warnings))
               else:
-                  head = "\u2705 WgtRadar: всё починилось"
-                  body = "Все источники снова отдают пакеты."
+                  # называем приложения поимённо: иначе «всё починилось» легко
+                  # прочитать как «вернулось то, что вчера пропало»
+                  head = "\u2705 WgtRadar: источники в порядке"
+                  body = ("Проблем в каталоге не осталось.\nОтдают пакеты (%d): %s."
+                          % (len(found), ", ".join(sorted(found))))
               msgs.append(head + "\n\n" + body)
               print("состояние изменилось — будет отправлено уведомление")
           else:
@@ -277,13 +281,13 @@ jobs:
           # на warnings и на цвет запуска она не влияет
           if alpac != was_alpac:
               if alpac and not was_alpac:
-                  msgs.append("ALPAC: на сайте появилась сборка для Tizen\n\n" + alpac +
+                  msgs.append("\U0001f50e Наблюдение — ALPAC: появилась сборка для Tizen\n\n" + alpac +
                               "\n\nМожно вернуть строку в STATIC воркфлоу catalog.")
               elif alpac:
-                  msgs.append("ALPAC: ссылка на .wgt изменилась\n\nбыло:  %s\nстало: %s"
+                  msgs.append("\U0001f50e Наблюдение — ALPAC: ссылка на .wgt изменилась\n\nбыло:  %s\nстало: %s"
                               % (was_alpac, alpac))
               else:
-                  msgs.append("ALPAC: ссылка на .wgt снова пропала\n\nбыла: %s\nстраница: %s"
+                  msgs.append("\U0001f50e Наблюдение — ALPAC: ссылка на .wgt снова пропала\n\nбыла: %s\nстраница: %s"
                               % (was_alpac, WATCH_PAGE))
               print("наблюдение: состояние ALPAC изменилось — будет отправлено уведомление")
 
